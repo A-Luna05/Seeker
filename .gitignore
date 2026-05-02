@@ -1,0 +1,35 @@
+# Secrets and local env (never commit)
+.env
+.env.*.local
+!.env.example
+
+# Python
+backend/.venv/
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Node / frontend build
+frontend/node_modules/
+frontend/dist/
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Nested stray clone (not part of this app)
+Seeker/
+
+# Optional: local tooling
+.cursor/
