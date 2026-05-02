@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     pass
 
 # Neon/serverless Postgres: avoid prepared-statement issues with poolers.
+# check: verify connection on checkout (avoids [BAD] after server idle close).
+# Shorter max_lifetime / max_idle than defaults to recycle before Neon/proxy drops TCP.
 _POOL_KWARGS: dict[str, Any] = {"autocommit": True, "prepare_threshold": None}
 
 
@@ -38,7 +40,11 @@ async def create_postgres_checkpointer(
         conninfo=database_url,
         kwargs=_POOL_KWARGS,
         open=False,
+        min_size=1,
         max_size=10,
+        check=AsyncConnectionPool.check_connection,
+        max_lifetime=300.0,
+        max_idle=120.0,
     )
     await pool.open()
     checkpointer = AsyncPostgresSaver(pool)
