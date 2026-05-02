@@ -1,0 +1,24 @@
+# Netlify: deploy the Vite app from the `frontend` package (monorepo root = repo root).
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  base = "frontend"
+  command = "pnpm install && pnpm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# SPA: send unknown paths to index.html (safe for client-only routes later).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Optional: same-origin `/api` → your hosted FastAPI, so you can leave VITE_API_URL unset.
+# Uncomment and set YOUR_API to the public backend origin (no trailing slash).
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://YOUR_API.example.com/api/:splat"
+#   status = 200
+#   force = true
