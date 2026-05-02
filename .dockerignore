@@ -1,0 +1,16 @@
+# Repo-root build: only backend matters; shrink context sent to Docker.
+.git
+.github
+.cursor
+frontend
+Seeker
+**/.venv
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+.pytest_cache
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/tests
+*.log

@@ -82,16 +82,28 @@ Vite proxies `/api` to `http://127.0.0.1:8000`. Start the backend first, then op
 
 ## Deploy on Render (Docker)
 
-1. In the Render dashboard: **New → Web Service**, connect your repo.
-2. Select **Docker** as the environment (not “Native”).
-3. Set **Root directory** to `backend` so the build uses `backend/Dockerfile` with context `backend/`.
-4. Add environment variables from `.env.example` (at minimum `OPENAI_API_KEY`; `DATABASE_URL` for Neon checkpoints or leave empty for in-memory).
-5. Render injects **`PORT`**; the container listens on `0.0.0.0` using that port.
+**Option A — repo root (simplest):** leave **Root Directory** empty. The repo has a root `Dockerfile` that copies `backend/`. Set **Dockerfile Path** to `Dockerfile` (default).
+
+**Option B — backend only:** set **Root Directory** to `backend` and **Dockerfile Path** to `Dockerfile` (not `backend/Dockerfile`, or the path is wrong).
+
+Steps:
+
+1. **New → Web Service**, connect the repo, choose **Docker**.
+2. Configure root directory / Dockerfile as above.
+3. Add environment variables from `.env.example` (at minimum `OPENAI_API_KEY`; `DATABASE_URL` for Neon checkpoints or leave empty for in-memory).
+4. Render injects **`PORT`**; the container listens on `0.0.0.0` using that port.
 
 **Local smoke test** (from repo root):
 
 ```bash
 docker build -t seeker-api ./backend
+docker run --rm -p 8000:8000 -e OPENAI_API_KEY=sk-test -e DATABASE_URL= seeker-api
+```
+
+Or build like Render (repo root):
+
+```bash
+docker build -t seeker-api .
 docker run --rm -p 8000:8000 -e OPENAI_API_KEY=sk-test -e DATABASE_URL= seeker-api
 ```
 
