@@ -14,8 +14,16 @@ class Settings(BaseSettings):
     database_url: str = ""
     openai_api_key: str = ""
     litellm_default_model: str = "gpt-4o-mini"
+    # Optional: Brave Search API (https://brave.com/search/api). Works from cloud hosts where ddgs often returns nothing.
+    brave_search_api_key: str = ""
 
-    @field_validator("database_url", "openai_api_key", "litellm_default_model", mode="before")
+    @field_validator(
+        "database_url",
+        "openai_api_key",
+        "litellm_default_model",
+        "brave_search_api_key",
+        mode="before",
+    )
     @classmethod
     def strip_whitespace(cls, value: object) -> object:
         if isinstance(value, str):

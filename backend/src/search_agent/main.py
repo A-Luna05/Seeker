@@ -26,7 +26,9 @@ async def lifespan(app: FastAPI):
         os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
 
     app.state.llm = LiteLLMClient(settings.litellm_default_model)
-    app.state.duckduckgo = DuckDuckGoService()
+    app.state.duckduckgo = DuckDuckGoService(
+        brave_search_api_key=settings.brave_search_api_key or None,
+    )
     app.state.wikipedia = WikipediaService()
     app.state.visualization = VisualizationService()
     app.state.pdf = PdfReportService()

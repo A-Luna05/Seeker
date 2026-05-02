@@ -59,7 +59,7 @@ async def web_search_node(state: SearchAgentState, config: RunnableConfig) -> di
         "run_trace": [
             trace_step(
                 "web_search",
-                "DuckDuckGo results",
+                "Web search results",
                 (f"[q={query[:80]}] " if query != base_q else "") + (preview or "no hits"),
             )
         ],

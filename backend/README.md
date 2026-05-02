@@ -33,7 +33,7 @@ uv pip install --python .venv/Scripts/python.exe -e ".[dev]"
 # or: uv pip install --python .venv/bin/python -e ".[dev]"
 ```
 
-Copy `.env.example` to `.env` and set `DATABASE_URL` (Neon connection string), `OPENAI_API_KEY`, and optionally `LITELLM_DEFAULT_MODEL`.
+Copy `.env.example` to `.env` and set `DATABASE_URL` (Neon connection string), `OPENAI_API_KEY`, and optionally `LITELLM_DEFAULT_MODEL`. For **web search from cloud hosting** (e.g. Render), set **`BRAVE_SEARCH_API_KEY`** ([Brave Search API](https://brave.com/search/api)); plain DuckDuckGo (`ddgs`) often returns no hits on datacenter IPs.
 
 First run with Postgres: checkpoint tables are created in app lifespan via `AsyncPostgresSaver.setup()`.
 
@@ -90,7 +90,7 @@ Steps:
 
 1. **New → Web Service**, connect the repo, choose **Docker**.
 2. Configure root directory / Dockerfile as above.
-3. Add environment variables from `.env.example` (at minimum `OPENAI_API_KEY`; `DATABASE_URL` for Neon checkpoints or leave empty for in-memory).
+3. Add environment variables from `.env.example` (at minimum `OPENAI_API_KEY`; `DATABASE_URL` for Neon checkpoints or leave empty for in-memory). For web search in production, add **`BRAVE_SEARCH_API_KEY`**.
 4. Render injects **`PORT`**; the container listens on `0.0.0.0` using that port.
 
 **Local smoke test** (from repo root):
