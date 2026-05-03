@@ -39,6 +39,22 @@ def _web_summary(web: list[dict[str, Any]]) -> str:
     return "\n".join(lines) if lines else "(none)"
 
 
+def _fetch_summary(ext: list[dict[str, Any]]) -> str:
+    if not ext:
+        return "(none)"
+    lines = []
+    for e in ext[:5]:
+        if not isinstance(e, dict):
+            continue
+        u = e.get("url") or ""
+        mark = "ok" if e.get("ok") else (e.get("error") or "fail")
+        lines.append(f"- {mark}: {u}")
+        if e.get("ok") and e.get("text"):
+            t = str(e["text"])[:400].replace("\n", " ")
+            lines.append(f"  excerpt: {t}…")
+    return "\n".join(lines) if lines else "(none)"
+
+
 async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[str, Any]:
     loops = int(state.get("verify_retry_count") or 0)
     if loops >= MAX_VERIFY_LOOPS:
@@ -63,6 +79,7 @@ async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[s
     query = state.get("query") or ""
     answer = (state.get("final_answer") or "").strip()
     web = state.get("web_results") or []
+    page_x = state.get("page_extractions") or []
     wiki = (state.get("wiki_summary") or "").strip()
     wiki_title = (state.get("wiki_title") or "").strip()
     need_web = bool(state.get("need_web"))
@@ -84,8 +101,8 @@ async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[s
             "cannot be fixed with another retrieval pass. Use more_web if sources/snippets are missing or stale. "
             "Use more_wiki if background from Wikipedia would help. "
             "Pick at most one retrieval route per turn. "
-            f"If the user/plan did not use web (need_web=false), still allow more_web if the draft clearly needs it. "
-            f"If need_wiki=false, still allow more_wiki if useful."
+            "If the user/plan did not use web (need_web=false), still allow more_web if the draft clearly needs it. "
+            "If need_wiki=false, still allow more_wiki if useful."
         )
     )
     human = HumanMessage(
@@ -93,6 +110,7 @@ async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[s
             f"User query:\n{query}\n\n"
             f"Planner: need_web={need_web}, need_wiki={need_wiki}\n\n"
             f"Web results (titles/urls):\n{_web_summary(web)}\n\n"
+            f"Fetched pages (excerpts):\n{_fetch_summary(page_x)}\n\n"
             f"Wikipedia title: {wiki_title or '(none)'}\n"
             f"Wikipedia summary (trimmed):\n{wiki[:1200] if wiki else '(none)'}\n\n"
             f"Draft answer:\n{answer or '(empty)'}\n"

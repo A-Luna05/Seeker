@@ -21,6 +21,7 @@ class SearchAgentState(TypedDict, total=False):
     wiki_query: str
 
     web_results: list[dict[str, Any]]
+    page_extractions: list[dict[str, Any]]
     wiki_title: str
     wiki_summary: str
     wiki_url: str

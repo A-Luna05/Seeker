@@ -36,6 +36,7 @@ async def run_agent(body: RunAgentRequest, request: Request) -> RunAgentResponse
             "thread_id": thread_id,
             "llm": request.app.state.llm,
             "duckduckgo": request.app.state.duckduckgo,
+            "page_fetch": request.app.state.page_fetch,
             "wikipedia": request.app.state.wikipedia,
             "visualization": request.app.state.visualization,
             "model": body.model,
