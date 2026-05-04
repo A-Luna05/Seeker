@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { RunAgentResponse } from '../types/agent'
+import { StockChart } from './StockChart'
 
 type Props = {
   result: RunAgentResponse | null
@@ -120,6 +121,15 @@ export function RunOutput({ result, error, loading, onDownloadPdf }: Props) {
               </li>
             ))}
           </ul>
+        </div>
+      ) : null}
+
+      {result.stock_chart?.points?.length ? (
+        <div className="mt-4">
+          <h3 className={`${heading} mb-2 text-base`}>Stock chart</h3>
+          <div className="rounded-lg border border-cyan-400/20 bg-[#06162b]/80 p-2">
+            <StockChart chart={result.stock_chart} />
+          </div>
         </div>
       ) : null}
 

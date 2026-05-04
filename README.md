@@ -1,6 +1,6 @@
 # Seeker
 
-LangGraph **search agent** with DuckDuckGo and Wikipedia retrieval, optional charts, optional PDF reports, Postgres (Neon) checkpoints, and a React + Vite + Tailwind UI.
+LangGraph **search Agent** with DuckDuckGo and Wikipedia retrieval, optional charts, optional PDF reports, Postgres (Neon) checkpoints, and a React + Vite + Tailwind UI.
 
 ## Repository layout
 

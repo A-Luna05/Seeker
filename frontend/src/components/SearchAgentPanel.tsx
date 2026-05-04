@@ -35,7 +35,6 @@ const btnBase =
 export function SearchAgentPanel() {
   const [query, setQuery] = useState('')
   const [model, setModel] = useState<string>(MODEL_OPTIONS[0].value)
-  const [includePdf, setIncludePdf] = useState(false)
   const [result, setResult] = useState<RunAgentResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -50,7 +49,6 @@ export function SearchAgentPanel() {
           query: query.trim(),
           model,
           thread_id: result?.thread_id ?? null,
-          include_pdf: includePdf,
         })
         setResult(data)
       } catch (err) {
@@ -60,7 +58,7 @@ export function SearchAgentPanel() {
         setLoading(false)
       }
     },
-    [query, model, includePdf, result],
+    [query, model, result],
   )
 
   const onDownloadPdf = useCallback(() => {
@@ -72,42 +70,29 @@ export function SearchAgentPanel() {
     <div className="mx-auto max-w-2xl px-5 py-8 pb-16 text-left">
       <header>
         <h1 className="mb-1.5 py-4  text-2xl font-bold tracking-tight text-slate-50">
-          Albert's Search Agent
+          Seeker - LangGraph Search Agent
         </h1>
         <p className="m-0 text-sm text-slate-400">
-          LangGraph · DuckDuckGo · Wikipedia · optional chart & PDF trace
+          LangGraph · DuckDuckGo · Brave · Wikipedia · Alpha Vantage · Charting · PDF Reports
         </p>
       </header>
 
       <form className="mt-6 flex flex-col gap-4" onSubmit={onSubmit}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-          <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-slate-200">
-            <span className="text-sm font-medium text-slate-200">Model</span>
-            <select
-              className={selectClass}
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              aria-label="Model"
-            >
-              {MODEL_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex cursor-pointer items-center gap-2.5 text-slate-300 sm:shrink-0 sm:pb-2.5">
-            <input
-              type="checkbox"
-              className="size-4 rounded border-white/25 bg-[#0d2847] text-cyan-500 focus:ring-cyan-500/40"
-              checked={includePdf}
-              onChange={(e) => setIncludePdf(e.target.checked)}
-            />
-            <span className="text-sm leading-snug">
-              Include demo PDF (findings + trace diagram)
-            </span>
-          </label>
-        </div>
+        <label className="flex max-w-md flex-col gap-1.5 text-slate-200">
+          <span className="text-sm font-medium text-slate-200">Model</span>
+          <select
+            className={selectClass}
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            aria-label="Model"
+          >
+            {MODEL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="flex flex-col gap-1.5 text-slate-200">
           <span className="text-sm font-medium text-slate-200">Query</span>
           <textarea

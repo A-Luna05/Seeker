@@ -39,6 +39,41 @@ def _web_summary(web: list[dict[str, Any]]) -> str:
     return "\n".join(lines) if lines else "(none)"
 
 
+def _fetch_summary(ext: list[dict[str, Any]]) -> str:
+    if not ext:
+        return "(none)"
+    lines = []
+    for e in ext[:5]:
+        if not isinstance(e, dict):
+            continue
+        u = e.get("url") or ""
+        mark = "ok" if e.get("ok") else (e.get("error") or "fail")
+        lines.append(f"- {mark}: {u}")
+        if e.get("ok") and e.get("text"):
+            t = str(e["text"])[:400].replace("\n", " ")
+            lines.append(f"  excerpt: {t}…")
+    return "\n".join(lines) if lines else "(none)"
+
+
+def _alpha_vantage_summary(state: SearchAgentState) -> str:
+    raw = state.get("alpha_vantage_chart")
+    if not isinstance(raw, dict):
+        return "(none)"
+    pts = raw.get("points")
+    if not isinstance(pts, list) or len(pts) < 1:
+        return "(none)"
+    sym = str(raw.get("symbol") or "").strip()
+    name = str(raw.get("name") or sym).strip()
+    first = pts[0] if isinstance(pts[0], dict) else {}
+    last = pts[-1] if isinstance(pts[-1], dict) else {}
+    return (
+        f"Source: Alpha Vantage (authoritative daily closes for this run). "
+        f"{name} ({sym}), {len(pts)} sessions, "
+        f"from {first.get('date', '?')} close={first.get('close', '?')} "
+        f"through {last.get('date', '?')} close={last.get('close', '?')}."
+    )
+
+
 async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[str, Any]:
     loops = int(state.get("verify_retry_count") or 0)
     if loops >= MAX_VERIFY_LOOPS:
@@ -63,10 +98,13 @@ async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[s
     query = state.get("query") or ""
     answer = (state.get("final_answer") or "").strip()
     web = state.get("web_results") or []
+    page_x = state.get("page_extractions") or []
     wiki = (state.get("wiki_summary") or "").strip()
     wiki_title = (state.get("wiki_title") or "").strip()
     need_web = bool(state.get("need_web"))
     need_wiki = bool(state.get("need_wiki"))
+
+    av_block = _alpha_vantage_summary(state)
 
     sys = SystemMessage(
         content=(
@@ -84,15 +122,22 @@ async def verify_node(state: SearchAgentState, config: RunnableConfig) -> dict[s
             "cannot be fixed with another retrieval pass. Use more_web if sources/snippets are missing or stale. "
             "Use more_wiki if background from Wikipedia would help. "
             "Pick at most one retrieval route per turn. "
-            f"If the user/plan did not use web (need_web=false), still allow more_web if the draft clearly needs it. "
-            f"If need_wiki=false, still allow more_wiki if useful."
+            "If the user/plan did not use web (need_web=false), still allow more_web if the draft clearly needs it. "
+            "If need_wiki=false, still allow more_wiki if useful.\n"
+            "IMPORTANT: If a \"Market data (Alpha Vantage)\" section is present below (not \"(none)\"), it is "
+            "first-class retrieved market data for this run—NOT missing web/Wikipedia grounding. "
+            "When the draft states prices, trends, or levels consistent with that block, score them as well-supported; "
+            'do not call them speculative, \"may relate\", or ask for unrelated URLs to back those numbers. '
+            "Do not penalize the draft for omitting citations to Yahoo/SEC for figures that come from that block."
         )
     )
     human = HumanMessage(
         content=(
             f"User query:\n{query}\n\n"
             f"Planner: need_web={need_web}, need_wiki={need_wiki}\n\n"
+            f"Market data (Alpha Vantage):\n{av_block}\n\n"
             f"Web results (titles/urls):\n{_web_summary(web)}\n\n"
+            f"Fetched pages (excerpts):\n{_fetch_summary(page_x)}\n\n"
             f"Wikipedia title: {wiki_title or '(none)'}\n"
             f"Wikipedia summary (trimmed):\n{wiki[:1200] if wiki else '(none)'}\n\n"
             f"Draft answer:\n{answer or '(empty)'}\n"

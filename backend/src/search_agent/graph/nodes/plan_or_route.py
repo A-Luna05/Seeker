@@ -57,6 +57,18 @@ async def plan_node(state: SearchAgentState, config: RunnableConfig) -> dict[str
             "need_web (boolean): use DuckDuckGo for fresh web results; "
             "need_wiki (boolean): use Wikipedia for stable background/overview; "
             "need_chart (boolean): true if the user asks for a chart, plot, graph, or numeric comparison; "
+            "need_alpha_vantage (boolean): true if the user asks about a stock ticker, share price, "
+            "equity, company valuation on markets, or financial time series for a listed company; "
+            "ALSO true for definitional or overview questions about a specific company or corporation "
+            '(e.g. "What is Nvidia?", "Who is Tesla?", "Tell me about Microsoft") so market data can '
+            "augment the answer—set alpha_vantage_keywords to that company name (or ticker if given). "
+            "Skip for non-company topics (people, places, generic concepts, acronyms without a "
+            "company, products with no clear listed parent). "
+            "alpha_vantage_keywords (string): if need_alpha_vantage is true, a compact company name, "
+            "ticker symbol, or equity search phrase (e.g. \"AAPL\", \"Nvidia\", \"Toyota\"). "
+            "If need_alpha_vantage is false, use an empty string for alpha_vantage_keywords. "
+            "If the query is ONLY about stock price/history and not a separate custom chart, set "
+            "need_chart to false (a dedicated market chart may still be shown). "
             "reason (string): one short sentence; "
             "wiki_query (string): if need_wiki is true, a SHORT Wikipedia article title or search phrase "
             "(proper noun / entity only, e.g. \"LeBron James\" not the full user question). "
@@ -65,8 +77,11 @@ async def plan_node(state: SearchAgentState, config: RunnableConfig) -> dict[str
             "For entity/fact/overview questions, set BOTH true unless the query clearly needs only one "
             "(e.g. pure breaking-news lookup → web only; narrowly scoped definition of one term with no "
             "recency angle → wiki only is acceptable). "
-            'Example: {"need_web": true, "need_wiki": true, "need_chart": false, "reason": "...", '
-            '"wiki_query": "LeBron James"}'
+            "For people, places, or generic topics (not a company), set need_alpha_vantage false and "
+            "alpha_vantage_keywords \"\". "
+            'Example: {"need_web": true, "need_wiki": true, "need_chart": false, '
+            '"need_alpha_vantage": true, "alpha_vantage_keywords": "Nvidia", "reason": "...", '
+            '"wiki_query": "Nvidia"}'
         )
     )
     human = HumanMessage(content=query)
@@ -80,6 +95,10 @@ async def plan_node(state: SearchAgentState, config: RunnableConfig) -> dict[str
     need_web = bool(data.get("need_web", True))
     need_wiki = bool(data.get("need_wiki", True))
     need_chart = bool(data.get("need_chart", False))
+    need_alpha_vantage = bool(data.get("need_alpha_vantage", False))
+    av_kw = str(data.get("alpha_vantage_keywords", "")).strip()[:200]
+    if not need_alpha_vantage:
+        av_kw = ""
     reason = str(data.get("reason", ""))[:500]
     wiki_query = str(data.get("wiki_query", "")).strip()[:200]
     if not need_wiki:
@@ -88,13 +107,16 @@ async def plan_node(state: SearchAgentState, config: RunnableConfig) -> dict[str
         "need_web": need_web,
         "need_wiki": need_wiki,
         "need_chart": need_chart,
+        "need_alpha_vantage": need_alpha_vantage,
+        "alpha_vantage_keywords": av_kw,
         "plan_reason": reason,
         "wiki_query": wiki_query,
         "run_trace": [
             trace_step(
                 "plan",
                 "Planned retrieval",
-                f"web={need_web}, wiki={need_wiki}, chart={need_chart}. "
+                f"web={need_web}, wiki={need_wiki}, chart={need_chart}, "
+                f"alpha_vantage={need_alpha_vantage} av_kw={av_kw!r}. "
                 f"wiki_query={wiki_query!r}. {reason}",
             )
         ],
