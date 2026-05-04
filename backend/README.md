@@ -1,4 +1,4 @@
-# Search agent backend
+# Seeker backend
 
 FastAPI + LangGraph agent with DuckDuckGo, Wikipedia, optional charts, Neon (Postgres) checkpoints, and optional PDF demo reports.
 

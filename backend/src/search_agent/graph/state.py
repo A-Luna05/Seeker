@@ -17,15 +17,19 @@ class SearchAgentState(TypedDict, total=False):
     need_web: bool
     need_wiki: bool
     need_chart: bool
+    need_alpha_vantage: bool
+    alpha_vantage_keywords: str
     plan_reason: str
     wiki_query: str
 
     web_results: list[dict[str, Any]]
+    page_extractions: list[dict[str, Any]]
     wiki_title: str
     wiki_summary: str
     wiki_url: str
 
     chart_png_base64: str
+    alpha_vantage_chart: dict[str, Any]
     final_answer: str
     citations: list[str]
 
