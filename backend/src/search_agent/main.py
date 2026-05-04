@@ -11,6 +11,7 @@ from search_agent.config import get_settings
 from search_agent.graph.builder import build_compiled_graph
 from search_agent.llm.litellm_client import LiteLLMClient
 from search_agent.persistence.checkpointer import CheckpointerResources, create_postgres_checkpointer
+from search_agent.services.alpha_vantage_service import AlphaVantageService
 from search_agent.services.duckduckgo_service import DuckDuckGoService
 from search_agent.services.page_fetch_service import PageFetchService
 from search_agent.services.pdf_report_service import PdfReportService
@@ -32,6 +33,7 @@ async def lifespan(app: FastAPI):
     )
     app.state.page_fetch = PageFetchService()
     app.state.wikipedia = WikipediaService()
+    app.state.alpha_vantage = AlphaVantageService(settings.alphavantage_api_key or None)
     app.state.visualization = VisualizationService()
     app.state.pdf = PdfReportService()
 

@@ -16,12 +16,15 @@ class Settings(BaseSettings):
     litellm_default_model: str = "gpt-4o-mini"
     # Optional: Brave Search API (https://brave.com/search/api). Works from cloud hosts where ddgs often returns nothing.
     brave_search_api_key: str = ""
+    # Optional: Alpha Vantage (https://www.alphavantage.co/support/#api-key) for equity lookup and charts.
+    alphavantage_api_key: str = ""
 
     @field_validator(
         "database_url",
         "openai_api_key",
         "litellm_default_model",
         "brave_search_api_key",
+        "alphavantage_api_key",
         mode="before",
     )
     @classmethod

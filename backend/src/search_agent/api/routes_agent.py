@@ -15,6 +15,7 @@ from search_agent.models.api import (
     CheckpointSummary,
     RunAgentRequest,
     RunAgentResponse,
+    StockChartPayload,
 )
 from search_agent.services.pdf_report_service import PdfReportService
 
@@ -38,6 +39,7 @@ async def run_agent(body: RunAgentRequest, request: Request) -> RunAgentResponse
             "duckduckgo": request.app.state.duckduckgo,
             "page_fetch": request.app.state.page_fetch,
             "wikipedia": request.app.state.wikipedia,
+            "alpha_vantage": request.app.state.alpha_vantage,
             "visualization": request.app.state.visualization,
             "model": body.model,
         }
@@ -61,16 +63,24 @@ async def run_agent(body: RunAgentRequest, request: Request) -> RunAgentResponse
             )
         )
 
-    pdf_b64: str | None = None
-    if body.include_pdf:
-        pdf_svc: PdfReportService = request.app.state.pdf
-        pdf_bytes = pdf_svc.build_from_run_state(result)
-        pdf_b64 = base64.b64encode(pdf_bytes).decode("ascii")
+    pdf_svc: PdfReportService = request.app.state.pdf
+    pdf_bytes = pdf_svc.build_from_run_state(result)
+    pdf_b64 = base64.b64encode(pdf_bytes).decode("ascii")
+
+    stock_chart: StockChartPayload | None = None
+    raw_chart = result.get("alpha_vantage_chart")
+    if isinstance(raw_chart, dict):
+        try:
+            stock_chart = StockChartPayload.model_validate(raw_chart)
+        except Exception:
+            stock_chart = None
 
     plan_info = {
         "need_web": result.get("need_web"),
         "need_wiki": result.get("need_wiki"),
         "need_chart": result.get("need_chart"),
+        "need_alpha_vantage": result.get("need_alpha_vantage"),
+        "alpha_vantage_keywords": result.get("alpha_vantage_keywords"),
         "reason": result.get("plan_reason", ""),
         "wiki_query": result.get("wiki_query", ""),
         "verify_route": result.get("verify_route"),
@@ -87,6 +97,7 @@ async def run_agent(body: RunAgentRequest, request: Request) -> RunAgentResponse
         run_trace=trace,
         pdf_base64=pdf_b64,
         plan=plan_info,
+        stock_chart=stock_chart,
     )
 
 

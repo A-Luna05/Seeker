@@ -15,10 +15,33 @@ from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Tabl
 
 from search_agent.graph.trace_figure import trace_figure_png
 from search_agent.models.trace import trace_steps_from_state
+from search_agent.services.visualization_service import VisualizationService
 
 PAGE_W, PAGE_H = letter
 _MARGIN = 0.75 * inch
 _CONTENT_W = PAGE_W - 2 * _MARGIN
+_PAGE_INNER_H = PAGE_H - 2 * _MARGIN
+# Cap raster height so ReportLab frames never raise LayoutError on tall figures.
+_MAX_FLOWABLE_IMG_H = min(4.75 * inch, _PAGE_INNER_H - 1.0 * inch)
+
+
+def _fit_rl_image(image_bytes: bytes, max_w: float, max_h: float) -> Image:
+    """Scale a raster image so both dimensions fit inside max_w × max_h (points)."""
+    img = Image(BytesIO(image_bytes))
+    iw = float(img.imageWidth)
+    ih = float(img.imageHeight)
+    if iw < 1 or ih < 1:
+        img.drawWidth = max_w
+        img.drawHeight = min(max_h, max_w * 0.55)
+        return img
+    pt_w = iw * 72.0 / 96.0
+    pt_h = ih * 72.0 / 96.0
+    scale = min(max_w / pt_w, max_h / pt_h)
+    if scale > 1.0:
+        scale = 1.0
+    img.drawWidth = pt_w * scale
+    img.drawHeight = pt_h * scale
+    return img
 
 
 def _slug_xml(s: str, *, max_len: int | None = None) -> str:
@@ -58,6 +81,7 @@ class PdfReportService:
         run_trace: list[dict[str, Any]],
         trace_diagram_png: bytes | None,
         answer_chart_png: bytes | None = None,
+        stock_chart_png: bytes | None = None,
     ) -> bytes:
         buffer = BytesIO()
         base = getSampleStyleSheet()
@@ -110,7 +134,7 @@ class PdfReportService:
         doc = SimpleDocTemplate(
             buffer,
             pagesize=letter,
-            title="Search Agent Report",
+            title="Seeker - Report",
             leftMargin=_MARGIN,
             rightMargin=_MARGIN,
             topMargin=_MARGIN,
@@ -118,7 +142,7 @@ class PdfReportService:
         )
 
         story: list[Any] = []
-        story.append(Paragraph("Search agent report", title))
+        story.append(Paragraph("Seeker - Report", title))
         story.append(Spacer(1, 0.08 * inch))
 
         story.append(_section_title("Query", label))
@@ -128,6 +152,11 @@ class PdfReportService:
         story.append(Paragraph("Answer", h2))
         story.append(_plain_answer(answer, body))
         story.append(Spacer(1, 0.08 * inch))
+
+        if stock_chart_png:
+            story.append(Paragraph("Stock chart (daily closes)", h2))
+            story.append(_fit_rl_image(stock_chart_png, _CONTENT_W, _MAX_FLOWABLE_IMG_H))
+            story.append(Spacer(1, 0.1 * inch))
 
         if citations:
             story.append(Paragraph("Citations", h2))
@@ -148,23 +177,12 @@ class PdfReportService:
 
         if trace_diagram_png:
             story.append(Paragraph("Run trace (diagram)", h2))
-            img = Image(BytesIO(trace_diagram_png))
-            max_w = _CONTENT_W
-            img.drawWidth = min(max_w, float(img.imageWidth) * 72 / 96 * 0.65)
-            if img.drawWidth <= 0:
-                img.drawWidth = max_w
-            img.drawHeight = float(img.imageHeight) * (img.drawWidth / float(img.imageWidth))
-            story.append(img)
+            story.append(_fit_rl_image(trace_diagram_png, _CONTENT_W, _MAX_FLOWABLE_IMG_H))
             story.append(Spacer(1, 0.1 * inch))
 
         if answer_chart_png:
             story.append(Paragraph("Answer chart", h2))
-            cimg = Image(BytesIO(answer_chart_png))
-            cimg.drawWidth = min(_CONTENT_W, float(cimg.imageWidth) * 72 / 96 * 0.65)
-            if cimg.drawWidth <= 0:
-                cimg.drawWidth = _CONTENT_W
-            cimg.drawHeight = float(cimg.imageHeight) * (cimg.drawWidth / float(cimg.imageWidth))
-            story.append(cimg)
+            story.append(_fit_rl_image(answer_chart_png, _CONTENT_W, _MAX_FLOWABLE_IMG_H))
             story.append(Spacer(1, 0.1 * inch))
 
         steps = trace_steps_from_state(run_trace)
@@ -228,6 +246,21 @@ class PdfReportService:
             chart_bytes = base64.b64decode(chart_b64) if chart_b64 else None
         except Exception:
             chart_bytes = None
+
+        stock_bytes: bytes | None = None
+        av = state.get("alpha_vantage_chart")
+        if isinstance(av, dict):
+            pts = av.get("points")
+            sym = str(av.get("symbol") or "").strip()
+            if sym and isinstance(pts, list):
+                nm = av.get("name")
+                nm_str = str(nm).strip() if nm else None
+                stock_bytes = VisualizationService().chart_stock_daily_closes_png(
+                    symbol=sym,
+                    name=nm_str,
+                    points=pts,
+                )
+
         return self.build(
             query=str(state.get("query", "")),
             answer=str(state.get("final_answer", "")),
@@ -237,4 +270,5 @@ class PdfReportService:
             run_trace=list(state.get("run_trace") or []),
             trace_diagram_png=trace_png,
             answer_chart_png=chart_bytes,
+            stock_chart_png=stock_bytes,
         )

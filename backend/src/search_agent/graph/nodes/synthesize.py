@@ -104,6 +104,28 @@ async def synthesize_node(state: SearchAgentState, config: RunnableConfig) -> di
     wiki_q = (state.get("wiki_query") or "").strip()
     revision = (state.get("verify_feedback") or "").strip()
 
+    av_lines: list[str] = []
+    av_chart = state.get("alpha_vantage_chart")
+    if isinstance(av_chart, dict):
+        sym = av_chart.get("symbol")
+        nm = av_chart.get("name")
+        pts_raw = av_chart.get("points")
+        if sym and isinstance(pts_raw, list) and pts_raw:
+            av_lines.append(
+                f"Listed equity: {sym} — {nm or sym}. Interval: daily close (Alpha Vantage)."
+            )
+            tail = pts_raw[-8:] if len(pts_raw) >= 8 else pts_raw
+            for p in tail:
+                if isinstance(p, dict):
+                    av_lines.append(f"  {p.get('date')}: close={p.get('close')}")
+            first = pts_raw[0] if isinstance(pts_raw[0], dict) else {}
+            last = pts_raw[-1] if isinstance(pts_raw[-1], dict) else {}
+            if first.get("date") and last.get("date"):
+                av_lines.append(
+                    f"Range in sample: {first.get('date')} → {last.get('date')} "
+                    f"({len(pts_raw)} trading days)."
+                )
+
     sys = SystemMessage(
         content=(
             "You synthesize a helpful answer using ONLY the provided context. "
@@ -114,6 +136,8 @@ async def synthesize_node(state: SearchAgentState, config: RunnableConfig) -> di
             "citations array or only the Wikipedia Source URL if you used Wikipedia. "
             "When \"Fetched page excerpts\" are present, prefer concrete facts, numbers, and table rows "
             "from those excerpts over vague generalities. "
+            "When a \"Market data\" block is present, you may describe recent price levels and trend "
+            "from those numbers; do not fabricate URLs for market data. "
             "Be concise and accurate."
         )
     )
@@ -124,6 +148,8 @@ async def synthesize_node(state: SearchAgentState, config: RunnableConfig) -> di
         f"Fetched page excerpts (HTML text/tables; use for specifics):\n{fetch_block}\n",
         f"Wikipedia:\n{wiki or '(none)'}\nSource: {wiki_src or '(none)'}\n",
     ]
+    if av_lines:
+        ctx_parts.append("Market data (daily closes; not from web crawl):\n" + "\n".join(av_lines) + "\n")
     if revision:
         ctx_parts.append(f"\nRevision note (address in an improved answer):\n{revision}\n")
     ctx = HumanMessage(content="".join(ctx_parts))

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Artifact(BaseModel):
@@ -11,11 +11,24 @@ class Artifact(BaseModel):
     data_base64: str
 
 
+class StockChartPoint(BaseModel):
+    date: str
+    close: float
+
+
+class StockChartPayload(BaseModel):
+    symbol: str
+    name: str | None = None
+    interval: str = "daily"
+    points: list[StockChartPoint] = Field(default_factory=list)
+
+
 class RunAgentRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     query: str = Field(..., min_length=1, max_length=8000)
     thread_id: str | None = Field(None, max_length=128)
     model: str | None = Field(None, max_length=256)
-    include_pdf: bool = False
 
 
 class RunAgentResponse(BaseModel):
@@ -26,6 +39,7 @@ class RunAgentResponse(BaseModel):
     run_trace: list[dict[str, Any]] = Field(default_factory=list)
     pdf_base64: str | None = None
     plan: dict[str, Any] = Field(default_factory=dict)
+    stock_chart: StockChartPayload | None = None
 
 
 class CheckpointSummary(BaseModel):
