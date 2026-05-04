@@ -11,6 +11,18 @@ type Props = {
 const btnSecondary =
   'cursor-pointer rounded-lg border border-white/20 bg-white/5 px-3.5 py-2 font-[inherit] text-slate-100 hover:bg-white/10'
 
+const linkCitation =
+  'font-medium text-cyan-300 underline decoration-cyan-500/40 underline-offset-2 hover:text-cyan-200 hover:decoration-cyan-400/60'
+
+function isHttpUrl(s: string): boolean {
+  try {
+    const u = new URL(s)
+    return u.protocol === 'http:' || u.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 const heading = 'text-lg font-semibold text-slate-50'
 
 export function RunOutput({ result, error, loading, onDownloadPdf }: Props) {
@@ -114,9 +126,20 @@ export function RunOutput({ result, error, loading, onDownloadPdf }: Props) {
         <div className="mt-4">
           <h3 className={`${heading} mb-2 text-base`}>Citations</h3>
           <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
-            {result.citations.map((c) => (
-              <li key={c} className="break-all">
-                {c}
+            {result.citations.map((c, i) => (
+              <li key={`cite-${i}-${c}`} className="break-all">
+                {isHttpUrl(c) ? (
+                  <a
+                    href={c}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={linkCitation}
+                  >
+                    {c}
+                  </a>
+                ) : (
+                  c
+                )}
               </li>
             ))}
           </ul>
