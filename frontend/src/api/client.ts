@@ -8,6 +8,11 @@ import type {
 const base = () =>
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''
 
+/** Fire-and-forget warmup for hosts that sleep (e.g. Render). Errors are ignored. */
+export function pingHealth(): void {
+  void fetch(`${base()}/health`).catch(() => {})
+}
+
 async function parseJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const text = await res.text()
